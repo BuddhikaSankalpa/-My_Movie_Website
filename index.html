@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineVerse — Find Your Next Film</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Animated background grid -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--left"></div>
+    <div class="bg-glow bg-glow--right"></div>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <div class="nav__logo">CINE<span>VERSE</span></div>
+        <ul class="nav__links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Movies</a></li>
+            <li><a href="#">Series</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <header class="hero">
+        <canvas class="hero__particles" id="heroParticles"></canvas>
+
+        <div class="hero__content">
+            <!-- Live badge replacing eyebrow -->
+            <div class="hero__live-badge">
+                <div class="hero__live-dot"></div>
+                <span class="hero__live-text">Next Generation</span>
+            </div>
+
+            <h1 class="hero__title">DISCOVER<br><span>YOUR FILM</span></h1>
+            <p class="hero__sub">Search millions of movies instantly. Get ratings, plots, posters and more — powered by OMDB.</p>
+
+            <!-- Stats row -->
+            <div class="hero__stats">
+                <div class="hero__stat-item">
+                    <div class="hero__stat-num">500<span>K+</span></div>
+                    <div class="hero__stat-label">Titles</div>
+                </div>
+                <div class="hero__stat-item">
+                    <div class="hero__stat-num">4K<span>+</span></div>
+                    <div class="hero__stat-label">New Daily</div>
+                </div>
+                <div class="hero__stat-item">
+                    <div class="hero__stat-num">9.5<span>★</span></div>
+                    <div class="hero__stat-label">Avg Rating</div>
+                </div>
+            </div>
+
+            <!-- SEARCH BOX -->
+            <div class="search-box" id="searchBox">
+                <div class="search-box__wrap">
+                    <input id="movieInput" class="search-box__input" type="text" placeholder="Search for a movie…" autocomplete="off" />
+                </div>
+                <button class="search-box__btn" onclick="Search()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Search
+                </button>
+            </div>
+            <!-- Suggestions OUTSIDE search-box to avoid stacking context issues -->
+            <div class="suggestions" id="suggestions"></div>
+        </div>
+
+        <!-- RIGHT — cinematic ring + floating posters -->
+        <div class="hero__deco">
+            <div class="hero__deco-glow"></div>
+            <div class="hero__deco-ring"></div>
+            <div class="hero__deco-ring hero__deco-ring--2"></div>
+            <div class="hero__deco-ring hero__deco-ring--3"></div>
+            <div class="hero__deco-ring hero__deco-ring--4"></div>
+
+            <!-- Center play button -->
+            <div class="hero__deco-play">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--cyan)"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+
+            <!-- Floating movie posters (populated by JS) -->
+            <div class="hero__poster hero__poster--1" id="heroPoster1"><img src="" alt="" /></div>
+            <div class="hero__poster hero__poster--2" id="heroPoster2"><img src="" alt="" /></div>
+            <div class="hero__poster hero__poster--3" id="heroPoster3"><img src="" alt="" /></div>
+            <div class="hero__poster hero__poster--4" id="heroPoster4"><img src="" alt="" /></div>
+        </div>
+    </header>
+
+    <!-- LOADER -->
+    <div id="loader" class="loader hidden">
+        <div class="loader__ring"></div>
+        <p>Scanning the universe…</p>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorMsg" class="error-msg hidden">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Movie not found. Try another title.
+    </div>
+
+    <!-- RESULT CARD -->
+    <section id="resultSection" class="result hidden">
+        <div class="result__card">
+            <div class="result__poster-wrap">
+                <img id="Poster" class="result__poster" src="" alt="Movie Poster" />
+                <div class="result__poster-glow"></div>
+            </div>
+            <div class="result__info">
+                <div class="result__badge">NOW SHOWING</div>
+                <h2 id="movieTitle" class="result__title"></h2>
+                <div class="result__meta">
+                    <span id="movieYear" class="result__year"></span>
+                    <span id="movieGenre" class="result__genre"></span>
+                    <span id="movieRated" class="result__rated"></span>
+                </div>
+                <div class="result__rating">
+                    <div class="result__rating-stars">
+                        <span id="imdbRating" class="result__imdb">⭐ <b></b> / 10</span>
+                        <span id="movieRuntime" class="result__runtime"></span>
+                    </div>
+                </div>
+                <p id="Plot" class="result__plot"></p>
+                <div class="result__crew">
+                    <div class="result__crew-item">
+                        <span class="result__crew-label">Director</span>
+                        <span id="movieDirector" class="result__crew-value"></span>
+                    </div>
+                    <div class="result__crew-item">
+                        <span class="result__crew-label">Cast</span>
+                        <span id="movieActors" class="result__crew-value"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES STRIP -->
+    <section class="features">
+        <div class="features__inner">
+
+            <div class="features__item">
+                <div class="features__icon-wrap">
+                    <span class="features__icon">🎬</span>
+                </div>
+                <div class="features__number">500<span>K+</span></div>
+                <h3>Millions of Titles</h3>
+                <div class="features__divider"></div>
+                <p>Access the world's largest movie database instantly — from Hollywood blockbusters to indie gems.</p>
+            </div>
+
+            <div class="features__item">
+                <div class="features__icon-wrap">
+                    <span class="features__icon">⭐</span>
+                </div>
+                <div class="features__number">9.5<span>★</span></div>
+                <h3>IMDB Ratings</h3>
+                <div class="features__divider"></div>
+                <p>Get real-time scores, audience reviews, and critic consensus — all powered by OMDB live data.</p>
+            </div>
+
+            <div class="features__item">
+                <div class="features__icon-wrap">
+                    <span class="features__icon">🎭</span>
+                </div>
+                <div class="features__number">1<span>M+</span></div>
+                <h3>Full Cast &amp; Crew</h3>
+                <div class="features__divider"></div>
+                <p>Directors, actors, writers — every name behind the scene, all in one beautifully searchable place.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- BROWSE ROWS -->
+    <section class="browse">
+
+        <!-- TOP 10 ROW -->
+        <div class="row">
+            <div class="row__header">
+                <h2 class="row__title">Top 10 Movies Today</h2>
+                <div class="row__arrows">
+                    <button class="row__arrow" onclick="scrollRow('top10Track', -1)" aria-label="Scroll left">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="row__arrow" onclick="scrollRow('top10Track', 1)" aria-label="Scroll right">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="row__track" id="top10Track"></div>
+        </div>
+
+        <!-- TRENDING ROW -->
+        <div class="row">
+            <div class="row__header">
+                <h2 class="row__title">Trending Now</h2>
+                <div class="row__arrows">
+                    <button class="row__arrow" onclick="scrollRow('trendingTrack', -1)" aria-label="Scroll left">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="row__arrow" onclick="scrollRow('trendingTrack', 1)" aria-label="Scroll right">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="row__track" id="trendingTrack"></div>
+        </div>
+
+        <!-- ACTION ROW -->
+        <div class="row">
+            <div class="row__header">
+                <h2 class="row__title">Action &amp; Adventure</h2>
+                <div class="row__arrows">
+                    <button class="row__arrow" onclick="scrollRow('actionTrack', -1)" aria-label="Scroll left">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="row__arrow" onclick="scrollRow('actionTrack', 1)" aria-label="Scroll right">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="row__track" id="actionTrack"></div>
+        </div>
+
+        <!-- SCI-FI ROW -->
+        <div class="row">
+            <div class="row__header">
+                <h2 class="row__title">Sci-Fi &amp; Thriller</h2>
+                <div class="row__arrows">
+                    <button class="row__arrow" onclick="scrollRow('scifiTrack', -1)" aria-label="Scroll left">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="row__arrow" onclick="scrollRow('scifiTrack', 1)" aria-label="Scroll right">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="row__track" id="scifiTrack"></div>
+        </div>
+
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="newsletter">
+        <div class="newsletter__inner">
+            <p class="newsletter__eyebrow">SUBSCRIBE TO OUR NEWSLETTER</p>
+            <p class="newsletter__sub">Stay updated with the latest releases, trailers and reviews delivered to your inbox.</p>
+            <div class="newsletter__form">
+                <input type="email" placeholder="Your email address" class="newsletter__input" />
+                <button class="newsletter__btn">Subscribe</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer__links">
+            <a href="#">Help</a>
+            <a href="#">About us</a>
+            <a href="#">Company</a>
+            <a href="#">Services</a>
+            <a href="#">Contact Us</a>
+        </div>
+        <p class="footer__copy">© 2025 CineVerse. All rights reserved.</p>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+</html>
+
+
+<!--<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <input id="movieInput"/>
+        <button onclick="Search()">Search</button>
+        <h1 id="movieTitle"></h1>
+        <h2 id="movieYear"></h2>
+        <img id="Poster">
+        <p id="Plot"></p>
+        <script src="index.js"></script>
+    </body>
+</html>-->
+
